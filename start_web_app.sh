@@ -12,10 +12,10 @@ fi
 
 echo "✅ Python 3 found: $(python3 --version)"
 
-# Try to install dependencies with --user flag (safer option)
-echo "📦 Running virtual Environment"
-uv sync
-source .venv/bin/activate
+# # Try to install dependencies with --user flag (safer option)
+# echo "📦 Running virtual Environment"
+# uv sync
+# source .venv/bin/activate
 
 # Check if dumpSOR.py exists in current directory
 if [ ! -f "dumpSOR.py" ]; then
@@ -31,5 +31,5 @@ echo "📖 API Docs: http://localhost:8800/docs"
 echo "🛑 Press Ctrl+C to stop the server"
 echo ""
 
-# Start the web application using the virtual environment
+# Start the web application 
 python sor_web_app.py
