@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOR Graph Comparison - {{primary_filename}} vs {{secondary_filename}}</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 1.1rem;
+    }
+
+    .main-content {
+      padding: 30px;
+    }
+
+    .files-legend {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .legend-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+    }
+
+    .legend-color.primary {
+      background-color: #4a90e2;
+    }
+
+    .legend-color.secondary {
+      background-color: #e74c3c;
+    }
+
+    .legend-text {
+      font-weight: bold;
+      font-size: 1rem;
+    }
+
+    .info-panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .info-panel {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .info-panel.primary {
+      border-top: 4px solid #4a90e2;
+    }
+
+    .info-panel.secondary {
+      border-top: 4px solid #e74c3c;
+    }
+
+    .panel-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-title.primary {
+      color: #4a90e2;
+    }
+
+    .panel-title.secondary {
+      color: #e74c3c;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 15px;
+    }
+
+    .info-item {
+      text-align: center;
+      padding: 15px;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-value {
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .info-value.primary {
+      color: #4a90e2;
+    }
+
+    .info-value.secondary {
+      color: #e74c3c;
+    }
+
+    .info-label {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .chart-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .chart-wrapper {
+      position: relative;
+      height: 700px;
+      margin-bottom: 20px;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .control-btn {
+      background: #4a90e2;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.3s ease;
+    }
+
+    .control-btn:hover {
+      background: #357abd;
+    }
+
+    .control-btn.secondary {
+      background: #6c757d;
+    }
+
+    .control-btn.secondary:hover {
+      background: #545b62;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      color: #4a90e2;
+      text-decoration: none;
+      font-size: 1rem;
+      margin-bottom: 20px;
+      transition: color 0.3s ease;
+    }
+
+    .back-link:hover {
+      color: #357abd;
+    }
+
+    .back-link::before {
+      content: "← ";
+      margin-right: 5px;
+    }
+
+    .comparison-analysis {
+      background: #fff3cd;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+      border-left: 4px solid #ffc107;
+    }
+
+    .analysis-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #856404;
+      margin-bottom: 15px;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+    }
+
+    .comparison-item {
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 4px solid #ffc107;
+    }
+
+    .comparison-metric {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .comparison-values {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .comparison-value {
+      font-size: 0.9rem;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    .comparison-value.primary {
+      background: rgba(74, 144, 226, 0.1);
+      color: #4a90e2;
+    }
+
+    .comparison-value.secondary {
+      background: rgba(231, 76, 60, 0.1);
+      color: #e74c3c;
+    }
+
+    .comparison-difference {
+      font-size: 0.8rem;
+      color: #666;
+      text-align: center;
+      font-style: italic;
+    }
+
+    @media (max-width: 1200px) {
+      .info-panels {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 2rem;
+      }
+
+      .main-content {
+        padding: 15px;
+      }
+
+      .chart-wrapper {
+        height: 500px;
+      }
+
+      .files-legend {
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 SOR Graph Comparison</h1>
+      <p>Interactive OTDR Loss Analysis Comparison</p>
+    </div>
+
+    <div class="main-content">
+      <a href="javascript:void(0)" class="back-link" onclick="parent.backToSorParser()">Back to SOR Parser</a>
+
+      <div class="files-legend">
+        <div class="legend-item">
+          <div class="legend-color primary"></div>
+          <div class="legend-text">{{primary_filename}}</div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color secondary"></div>
+          <div class="legend-text">{{secondary_filename}}</div>
+        </div>
+      </div>
+
+      <div class="info-panels">
+        <div class="info-panel primary">
+          <div class="panel-title primary">
+            <div class="legend-color primary"></div>
+            {{primary_filename}}
+          </div>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-value primary">{{primary_stats.total_points}}</div>
+              <div class="info-label">Data Points</div>
+            </div>
+            <div class="info-item">
+              <div class="info-value primary">{{primary_stats.max_distance}}</div>
+              <div class="info-label">Max Distance</div>
+            </div>
+            <div class="info-item">
+              <div class="info-value primary">{{primary_stats.total_loss}}</div>
+              <div class="info-label">Total Loss</div>
+            </div>
+            <div class="info-item">
+              <div class="info-value primary">{{primary_stats.fiber_length}} km</div>
+              <div class="info-label">Fiber Length</div>
+            </div>
+            <div class="info-item">
+              <div class="info-value primary">{{primary_stats.total_attenuation}} dB</div>
+              <div class="info-label">Total Attenuation</div>
+            </div>
+            <div class="info-item">
+              <div class="info-value primary">{{primary_stats.average_loss}} dB/km</div>
+              <div class="info-label">Average Loss</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-panel secondary">
+          <div class="panel-title secondary">
+            <div class="legend-color secondary"></div>
+            {{secondary_filename}}
+          </div>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-value secondary">{{secondary_stats.total_points}}</div>
+              <div class="info-label">Data Points</div>
+            </div>
+            <div class="info-item">
+              <div class="info-value secondary">{{secondary_stats.max_distance}}</div>
+              <div class="info-label">Max Distance</div>
+            </div>
+            <div class="info-item">
+              <div class="info-value secondary">{{secondary_stats.total_loss}}</div>
+              <div class="info-label">Total Loss</div>
+            </div>
+            <div class="info-item">
+              <div class="info-value secondary">{{secondary_stats.fiber_length}} km</div>
+              <div class="info-label">Fiber Length</div>
+            </div>
+            <div class="info-item">
+              <div class="info-value secondary">{{secondary_stats.total_attenuation}} dB</div>
+              <div class="info-label">Total Attenuation</div>
+            </div>
+            <div class="info-item">
+              <div class="info-value secondary">{{secondary_stats.average_loss}} dB/km</div>
+              <div class="info-label">Average Loss</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <div class="controls">
+          <button class="control-btn" onclick="resetZoom()">🔍 Reset Zoom</button>
+          <button class="control-btn" onclick="toggleGrid()">📐 Toggle Grid</button>
+          <button class="control-btn" onclick="togglePrimary()">👁️ Toggle {{primary_filename}}</button>
+          <button class="control-btn" onclick="toggleSecondary()">👁️ Toggle {{secondary_filename}}</button>
+          <button class="control-btn secondary" onclick="exportChart()">💾 Export PNG</button>
+          <button class="control-btn secondary" onclick="downloadData()">📊 Export Data</button>
+        </div>
+
+        <div class="chart-wrapper">
+          <canvas id="comparisonChart"></canvas>
+        </div>
+      </div>
+
+      <div class="comparison-analysis">
+        <div class="analysis-title">📋 Comparison Analysis</div>
+        <div class="comparison-grid">
+          <div class="comparison-item">
+            <div class="comparison-metric">Fiber Length Comparison</div>
+            <div class="comparison-values">
+              <div class="comparison-value primary">{{primary_stats.fiber_length}} km</div>
+              <div class="comparison-value secondary">{{secondary_stats.fiber_length}} km</div>
+            </div>
+            <div class="comparison-difference">Difference: {{length_difference}} km</div>
+          </div>
+          <div class="comparison-item">
+            <div class="comparison-metric">Total Loss Comparison</div>
+            <div class="comparison-values">
+              <div class="comparison-value primary">{{primary_stats.total_loss}}</div>
+              <div class="comparison-value secondary">{{secondary_stats.total_loss}}</div>
+            </div>
+            <div class="comparison-difference">Difference: {{loss_difference}} dB</div>
+          </div>
+          <div class="comparison-item">
+            <div class="comparison-metric">Average Loss/km</div>
+            <div class="comparison-values">
+              <div class="comparison-value primary">{{primary_stats.average_loss}} dB/km</div>
+              <div class="comparison-value secondary">{{secondary_stats.average_loss}} dB/km</div>
+            </div>
+            <div class="comparison-difference">Difference: {{avg_loss_difference}} dB/km</div>
+          </div>
+          <div class="comparison-item">
+            <div class="comparison-metric">Data Points</div>
+            <div class="comparison-values">
+              <div class="comparison-value primary">{{primary_stats.total_points}}</div>
+              <div class="comparison-value secondary">{{secondary_stats.total_points}}</div>
+            </div>
+            <div class="comparison-difference">Difference: {{points_difference}} points</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Chart.js configuration and setup
+    Chart.register(ChartZoom);
+
+    const ctx = document.getElementById('comparisonChart').getContext('2d');
+    let showGrid = true;
+
+    const primaryData = {{ primary_chart_data }};
+    const secondaryData = {{ secondary_chart_data }};
+
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: '{{primary_filename}}',
+          data: primaryData,
+          borderColor: '#4a90e2',
+          backgroundColor: 'rgba(74, 144, 226, 0.1)',
+          borderWidth: 2,
+          pointRadius: 1,
+          pointHoverRadius: 5,
+          pointBackgroundColor: '#4a90e2',
+          pointBorderColor: '#357abd',
+          fill: false,
+          tension: 0.1
+        }, {
+          label: '{{secondary_filename}}',
+          data: secondaryData,
+          borderColor: '#e74c3c',
+          backgroundColor: 'rgba(231, 76, 60, 0.1)',
+          borderWidth: 2,
+          pointRadius: 1,
+          pointHoverRadius: 5,
+          pointBackgroundColor: '#e74c3c',
+          pointBorderColor: '#c0392b',
+          fill: false,
+          tension: 0.1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          intersect: false,
+          mode: 'index'
+        },
+        plugins: {
+          title: {
+            display: true,
+            text: 'OTDR Measurement Comparison: Loss vs Distance',
+            font: {
+              size: 18,
+              weight: 'bold'
+            },
+            color: '#333'
+          },
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              usePointStyle: true,
+              pointStyle: 'circle',
+              font: {
+                size: 14,
+                weight: 'bold'
+              }
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            titleColor: 'white',
+            bodyColor: 'white',
+            borderColor: '#4a90e2',
+            borderWidth: 1,
+            displayColors: true,
+            callbacks: {
+              title: function (context) {
+                return 'Distance: ' + context[0].parsed.x.toFixed(4) + ' km';
+              },
+              label: function (context) {
+                return context.dataset.label + ': ' + context.parsed.y.toFixed(3) + ' dB';
+              }
+            }
+          },
+          zoom: {
+            zoom: {
+              wheel: {
+                enabled: true,
+              },
+              pinch: {
+                enabled: true
+              },
+              mode: 'xy',
+            },
+            pan: {
+              enabled: true,
+              mode: 'xy',
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            title: {
+              display: true,
+              text: 'Distance (km)',
+              font: {
+                size: 16,
+                weight: 'bold'
+              },
+              color: '#333'
+            },
+            grid: {
+              display: showGrid,
+              color: 'rgba(0,0,0,0.1)'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Loss (dB)',
+              font: {
+                size: 16,
+                weight: 'bold'
+              },
+              color: '#333'
+            },
+            grid: {
+              display: showGrid,
+              color: 'rgba(0,0,0,0.1)'
+            },
+            reverse: false
+          }
+        }
+      }
+    });
+
+    // Control functions
+    function resetZoom() {
+      chart.resetZoom();
+    }
+
+    function toggleGrid() {
+      showGrid = !showGrid;
+      chart.options.scales.x.grid.display = showGrid;
+      chart.options.scales.y.grid.display = showGrid;
+      chart.update();
+    }
+
+    function togglePrimary() {
+      const dataset = chart.data.datasets[0];
+      dataset.hidden = !dataset.hidden;
+      chart.update();
+    }
+
+    function toggleSecondary() {
+      const dataset = chart.data.datasets[1];
+      dataset.hidden = !dataset.hidden;
+      chart.update();
+    }
+
+    function exportChart() {
+      const url = chart.toBase64Image();
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'sor_comparison_{{primary_file_id}}_vs_{{secondary_file_id}}.png';
+      link.click();
+    }
+
+    function downloadData() {
+      let csvContent = "Distance (km),{{primary_filename}} Loss (dB),{{secondary_filename}} Loss (dB)\n";
+
+      // Find max length
+      const maxLen = Math.max(primaryData.length, secondaryData.length);
+
+      for (let i = 0; i < maxLen; i++) {
+        const primaryPoint = i < primaryData.length ? primaryData[i] : null;
+        const secondaryPoint = i < secondaryData.length ? secondaryData[i] : null;
+
+        const distance = primaryPoint ? primaryPoint.x : (secondaryPoint ? secondaryPoint.x : '');
+        const primaryLoss = primaryPoint ? primaryPoint.y : '';
+        const secondaryLoss = secondaryPoint ? secondaryPoint.y : '';
+
+        csvContent += `${distance},${primaryLoss},${secondaryLoss}\n`;
+      }
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'sor_comparison_data_{{primary_file_id}}_vs_{{secondary_file_id}}.csv';
+      link.click();
+      window.URL.revokeObjectURL(url);
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function (event) {
+      if (event.ctrlKey || event.metaKey) {
+        switch (event.key) {
+          case 'r':
+            event.preventDefault();
+            resetZoom();
+            break;
+          case 'g':
+            event.preventDefault();
+            toggleGrid();
+            break;
+          case '1':
+            event.preventDefault();
+            togglePrimary();
+            break;
+          case '2':
+            event.preventDefault();
+            toggleSecondary();
+            break;
+          case 's':
+            event.preventDefault();
+            exportChart();
+            break;
+        }
+      }
+    });
+
+    // Display keyboard shortcuts info
+    console.log('Keyboard shortcuts:');
+    console.log('Ctrl+R: Reset zoom');
+    console.log('Ctrl+G: Toggle grid');
+    console.log('Ctrl+1: Toggle primary file');
+    console.log('Ctrl+2: Toggle secondary file');
+    console.log('Ctrl+S: Export chart as PNG');
+  </script>
+</body>
+
+</html>

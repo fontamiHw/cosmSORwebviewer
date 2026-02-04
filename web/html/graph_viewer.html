@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOR Graph Viewer - {{filename}}</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 1.1rem;
+    }
+
+    .main-content {
+      padding: 30px;
+    }
+
+    .info-panel {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .info-item {
+      text-align: center;
+      padding: 15px;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #4a90e2;
+      margin-bottom: 5px;
+    }
+
+    .info-label {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .chart-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .chart-wrapper {
+      position: relative;
+      height: 600px;
+      margin-bottom: 20px;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .control-btn {
+      background: #4a90e2;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.3s ease;
+    }
+
+    .control-btn:hover {
+      background: #357abd;
+    }
+
+    .control-btn.secondary {
+      background: #6c757d;
+    }
+
+    .control-btn.secondary:hover {
+      background: #545b62;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      color: #4a90e2;
+      text-decoration: none;
+      font-size: 1rem;
+      margin-bottom: 20px;
+      transition: color 0.3s ease;
+    }
+
+    .back-link:hover {
+      color: #357abd;
+    }
+
+    .back-link::before {
+      content: "← ";
+      margin-right: 5px;
+    }
+
+    .analysis-panel {
+      background: #e8f5e8;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .analysis-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #2e7d32;
+      margin-bottom: 15px;
+    }
+
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+    }
+
+    .analysis-item {
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 4px solid #4a90e2;
+    }
+
+    .analysis-metric {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .analysis-value {
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 2rem;
+      }
+
+      .main-content {
+        padding: 15px;
+      }
+
+      .chart-wrapper {
+        height: 400px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📈 SOR Graph Viewer</h1>
+      <p>Interactive OTDR Loss Analysis - {{filename}}</p>
+    </div>
+
+    <div class="main-content">
+      <a href="javascript:void(0)" class="back-link" onclick="parent.backToSorParser()">Back to SOR Parser</a>
+
+      <div class="info-panel">
+        <div class="info-item">
+          <div class="info-value">{{stats.total_points}}</div>
+          <div class="info-label">Data Points</div>
+        </div>
+        <div class="info-item">
+          <div class="info-value">{{stats.max_distance}}</div>
+          <div class="info-label">Max Distance</div>
+        </div>
+        <div class="info-item">
+          <div class="info-value">{{stats.total_loss}}</div>
+          <div class="info-label">Total Loss</div>
+        </div>
+        <div class="info-item">
+          <div class="info-value">{{stats.distance_range}}</div>
+          <div class="info-label">Distance Range (km)</div>
+        </div>
+        <div class="info-item">
+          <div class="info-value">{{stats.loss_range}}</div>
+          <div class="info-label">Loss Range (dB)</div>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <div class="controls">
+          <button class="control-btn" onclick="resetZoom()">🔍 Reset Zoom</button>
+          <button class="control-btn" onclick="toggleGrid()">📐 Toggle Grid</button>
+          <button class="control-btn secondary" onclick="exportChart()">💾 Export PNG</button>
+          <button class="control-btn secondary" onclick="downloadData()">📊 Export Data</button>
+        </div>
+
+        <div class="chart-wrapper">
+          <canvas id="sorChart"></canvas>
+        </div>
+      </div>
+
+      <div class="analysis-panel">
+        <div class="analysis-title">📋 Measurement Analysis</div>
+        <div class="analysis-grid">
+          <div class="analysis-item">
+            <div class="analysis-metric">Fiber Length</div>
+            <div class="analysis-value">{{stats.fiber_length}} km</div>
+          </div>
+          <div class="analysis-item">
+            <div class="analysis-metric">Total Attenuation</div>
+            <div class="analysis-value">{{stats.total_attenuation}} dB</div>
+          </div>
+          <div class="analysis-item">
+            <div class="analysis-metric">Average Loss</div>
+            <div class="analysis-value">{{stats.average_loss}} dB/km</div>
+          </div>
+          <div class="analysis-item">
+            <div class="analysis-metric">Measurement Points</div>
+            <div class="analysis-value">{{stats.total_points}} samples</div>
+          </div>
+        </div>
+        <div
+          style="margin-top: 15px; padding: 10px; background: rgba(74, 144, 226, 0.1); border-radius: 6px; font-size: 0.9rem;">
+          <strong>📊 Data Source:</strong> {{data_source_info}}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Chart.js configuration and setup
+    Chart.register(ChartZoom);
+
+    const ctx = document.getElementById('sorChart').getContext('2d');
+    let showGrid = true;
+
+    const chartData = {{ chart_data }};
+
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Loss (dB) vs Distance (km)',
+          data: chartData,
+          borderColor: '#4a90e2',
+          backgroundColor: 'rgba(74, 144, 226, 0.1)',
+          borderWidth: 2,
+          pointRadius: 1,
+          pointHoverRadius: 5,
+          pointBackgroundColor: '#4a90e2',
+          pointBorderColor: '#357abd',
+          fill: true,
+          tension: 0.1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          intersect: false,
+          mode: 'index'
+        },
+        plugins: {
+          title: {
+            display: true,
+            text: 'OTDR Measurement: Loss vs Distance',
+            font: {
+              size: 16,
+              weight: 'bold'
+            },
+            color: '#333'
+          },
+          legend: {
+            display: true,
+            position: 'top'
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            titleColor: 'white',
+            bodyColor: 'white',
+            borderColor: '#4a90e2',
+            borderWidth: 1,
+            displayColors: false,
+            callbacks: {
+              title: function (context) {
+                return 'Distance: ' + context[0].parsed.x.toFixed(4) + ' km';
+              },
+              label: function (context) {
+                return 'Loss: ' + context.parsed.y.toFixed(3) + ' dB';
+              }
+            }
+          },
+          zoom: {
+            zoom: {
+              wheel: {
+                enabled: true,
+              },
+              pinch: {
+                enabled: true
+              },
+              mode: 'xy',
+            },
+            pan: {
+              enabled: true,
+              mode: 'xy',
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            title: {
+              display: true,
+              text: 'Distance (km)',
+              font: {
+                size: 14,
+                weight: 'bold'
+              },
+              color: '#333'
+            },
+            grid: {
+              display: showGrid,
+              color: 'rgba(0,0,0,0.1)'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Loss (dB)',
+              font: {
+                size: 14,
+                weight: 'bold'
+              },
+              color: '#333'
+            },
+            grid: {
+              display: showGrid,
+              color: 'rgba(0,0,0,0.1)'
+            },
+            reverse: false  // Set to true if you want higher loss values at the top
+          }
+        }
+      }
+    });
+
+    // Control functions
+    function resetZoom() {
+      chart.resetZoom();
+    }
+
+    function toggleGrid() {
+      showGrid = !showGrid;
+      chart.options.scales.x.grid.display = showGrid;
+      chart.options.scales.y.grid.display = showGrid;
+      chart.update();
+    }
+
+    function exportChart() {
+      const url = chart.toBase64Image();
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'sor_graph_{{file_id}}.png';
+      link.click();
+    }
+
+    function downloadData() {
+      const csvContent = "Distance (km),Loss (dB)\n" +
+        chartData.map(point => `${point.x},${point.y}`).join("\n");
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'sor_data_{{file_id}}.csv';
+      link.click();
+      window.URL.revokeObjectURL(url);
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function (event) {
+      if (event.ctrlKey || event.metaKey) {
+        switch (event.key) {
+          case 'r':
+            event.preventDefault();
+            resetZoom();
+            break;
+          case 'g':
+            event.preventDefault();
+            toggleGrid();
+            break;
+          case 's':
+            event.preventDefault();
+            exportChart();
+            break;
+        }
+      }
+    });
+
+    // Display keyboard shortcuts info
+    console.log('Keyboard shortcuts:');
+    console.log('Ctrl+R: Reset zoom');
+    console.log('Ctrl+G: Toggle grid');
+    console.log('Ctrl+S: Export chart as PNG');
+  </script>
+</body>
+
+</html>

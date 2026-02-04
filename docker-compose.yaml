@@ -1,0 +1,13 @@
+services:
+  websorviewer:
+    image: websorviewer:latest 
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: websorviewer
+    ports:
+      - '8800:8800'
+    
+    environment:
+      - PORT=8800

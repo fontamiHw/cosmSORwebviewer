@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOR File Parser - Web Interface</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 1.1rem;
+    }
+
+    .main-content {
+      display: flex;
+      min-height: 600px;
+    }
+
+    .upload-section {
+      flex: 1;
+      padding: 40px;
+      border-right: 2px solid #f0f0f0;
+    }
+
+    .content-section {
+      flex: 2;
+      padding: 40px;
+      display: none;
+    }
+
+    .upload-area {
+      border: 3px dashed #ddd;
+      border-radius: 12px;
+      padding: 60px 40px;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .upload-area:hover,
+    .upload-area.dragover {
+      border-color: #4a90e2;
+      background-color: #f8f9ff;
+    }
+
+    .upload-icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+      color: #4a90e2;
+    }
+
+    .upload-text {
+      font-size: 1.2rem;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    .upload-button {
+      background: #4a90e2;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .upload-button:hover {
+      background: #357abd;
+    }
+
+    .compare-button {
+      background: #6c757d;
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: not-allowed;
+      transition: all 0.3s ease;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .compare-button:enabled {
+      background: #28a745;
+      cursor: pointer;
+    }
+
+    .compare-button:enabled:hover {
+      background: #218838;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    .button-description {
+      font-size: 0.85rem;
+      color: #6c757d;
+      text-align: center;
+      margin-top: 5px;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .options-section {
+      margin-top: 25px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid #e9ecef;
+    }
+
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .checkbox-input {
+      margin-right: 12px;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: #4a90e2;
+    }
+
+    .checkbox-label {
+      font-size: 1rem;
+      color: #495057;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+    }
+
+    .checkbox-label:hover {
+      color: #4a90e2;
+    }
+
+    .checkbox-description {
+      font-size: 0.85rem;
+      color: #6c757d;
+      margin-top: 5px;
+      margin-left: 30px;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #4a90e2;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .chapters-panel {
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+
+    .chapters-header {
+      background: #e9ecef;
+      padding: 15px 20px;
+      border-radius: 8px 8px 0 0;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .chapters-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .chapter-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 20px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      border-bottom: 1px solid #eee;
+    }
+
+    .chapter-item:hover {
+      background: #e3f2fd;
+    }
+
+    .chapter-item.active {
+      background: #4a90e2;
+      color: white;
+    }
+
+    .chapter-icon {
+      margin-right: 12px;
+      font-size: 1.2rem;
+    }
+
+    .chapter-info {
+      flex: 1;
+    }
+
+    .chapter-name {
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .chapter-details {
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+
+    .chapter-count {
+      background: rgba(0, 0, 0, 0.1);
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+    }
+
+    .content-viewer {
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+
+    .content-header {
+      background: #e9ecef;
+      padding: 15px 20px;
+      border-radius: 8px 8px 0 0;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .content-title {
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+
+    .format-toggle {
+      display: flex;
+      background: white;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+    }
+
+    .format-btn {
+      padding: 8px 16px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .format-btn.active {
+      background: #4a90e2;
+      color: white;
+    }
+
+    .content-body {
+      padding: 20px;
+      max-height: 500px;
+      overflow-y: auto;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-size: 1rem;
+    }
+
+    .stats-panel {
+      background: #e8f5e8;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #2e7d32;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .clickable-stat {
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+      position: relative;
+    }
+
+    .clickable-stat:hover {
+      background: #e3f2fd;
+      border-color: #4a90e2;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+    }
+
+    .clickable-stat:hover .stat-value {
+      color: #357abd;
+    }
+
+    .clickable-stat::after {
+      content: "🔗";
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      font-size: 0.8rem;
+      opacity: 0.6;
+    }
+
+    .export-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .export-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.3s ease;
+    }
+
+    .export-btn:hover {
+      background: #218838;
+    }
+
+    .error-message {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border: 1px solid #f5c6cb;
+    }
+
+    .success-message {
+      background: #d4edda;
+      color: #155724;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border: 1px solid #c3e6cb;
+    }
+
+    /* Dual File Display Styles */
+    .secondary-upload-section {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 2px solid #e9ecef;
+    }
+
+    .secondary-upload-area {
+      border: 2px dashed #6c757d;
+      border-radius: 8px;
+      padding: 30px 20px;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      background: white;
+    }
+
+    .secondary-upload-area:hover {
+      border-color: #4a90e2;
+      background-color: #f8f9ff;
+    }
+
+    .dual-file-container {
+      display: flex;
+      gap: 20px;
+      min-height: 600px;
+    }
+
+    .file-panel {
+      flex: 1;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .primary-panel {
+      border-left: 4px solid #4a90e2;
+    }
+
+    .secondary-panel {
+      border-left: 4px solid #28a745;
+    }
+
+    .panel-header {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      padding: 15px 20px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .panel-header h3,
+    .panel-header h4 {
+      margin: 0;
+      color: #495057;
+    }
+
+    .file-panel .stats-panel {
+      margin: 15px;
+      background: #f8f9fa;
+    }
+
+    .file-panel .search-box {
+      margin: 15px;
+      width: calc(100% - 30px);
+    }
+
+    .file-panel .chapters-panel {
+      margin: 15px;
+    }
+
+    .file-panel .content-viewer {
+      margin: 15px;
+    }
+
+    .file-panel .chapters-list {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .file-panel .content-body {
+      max-height: 250px;
+      overflow-y: auto;
+    }
+
+    @media (max-width: 1200px) {
+      .dual-file-container {
+        flex-direction: column;
+      }
+
+      .file-panel {
+        flex: none;
+      }
+    }
+
+    /* Graph Container Styles */
+    #graphContainer {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        flex-direction: column;
+      }
+
+      .upload-section {
+        border-right: none;
+        border-bottom: 2px solid #f0f0f0;
+      }
+
+      .header h1 {
+        font-size: 2rem;
+      }
+
+      .upload-area {
+        padding: 40px 20px;
+      }
+
+      .dual-file-container {
+        flex-direction: column;
+        gap: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔍 SOR File Parser</h1>
+      <p>Modern Web-Based Optical Time-Domain Reflectometer Analysis Tool</p>
+    </div>
+
+    <div class="main-content">
+      <div class="upload-section" id="uploadSection">
+        <div class="upload-area" id="uploadArea">
+          <div class="upload-icon">📁</div>
+          <div class="upload-text">
+            Drag and drop your SOR file here<br>
+            or click to browse
+          </div>
+          <button class="upload-button" id="chooseFileBtn">
+            Choose File
+          </button>
+          <input type="file" id="fileInput" class="file-input" accept=".sor" onchange="handleFileSelect(this.files[0])">
+        </div>
+
+        <div class="options-section">
+          <div class="checkbox-container">
+            <input type="checkbox" id="enableGraphs" class="checkbox-input" checked>
+            <label for="enableGraphs" class="checkbox-label">
+              📈 Generate Graph Plots
+            </label>
+          </div>
+          <div class="checkbox-description">
+            Generate visual graphs and plots from the SOR data for enhanced analysis and visualization
+          </div>
+
+          <div style="margin-top: 20px; display: none;" id="compareButtonContainer">
+            <button class="compare-button" id="compareSorBtn" onclick="compareSorFiles()" disabled>
+              📊 Compare SOR Graph
+            </button>
+            <div class="button-description">
+              Generate and compare interactive graphs from both SOR files <br> (available when second file is loaded)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="loading" id="loadingArea">
+        <div class="spinner"></div>
+        <div>Parsing SOR file...</div>
+      </div>
+    </div>
+
+    <div class="content-section" id="contentSection">
+      <!-- Secondary File Upload Section (hidden initially) -->
+      <div class="secondary-upload-section" id="secondaryUploadSection" style="display: none;">
+        <h3>📋 Compare with Second SOR File</h3>
+        <div class="secondary-upload-area" id="secondaryUploadArea">
+          <div class="upload-icon">📁</div>
+          <div class="upload-text">Upload second SOR file for comparison</div>
+          <button class="upload-button" id="chooseSecondFileBtn">Choose Second File</button>
+          <input type="file" id="secondFileInput" class="file-input" accept=".sor"
+            onchange="handleSecondFileSelect(this.files[0])">
+        </div>
+      </div>
+
+      <!-- Dual File Display Container -->
+      <div class="dual-file-container" id="dualFileContainer">
+        <!-- Primary File Panel -->
+        <div class="file-panel primary-panel" id="primaryPanel">
+          <div class="panel-header">
+            <h3 id="primaryFileName">📄 Primary File</h3>
+          </div>
+
+          <div class="stats-panel" id="primaryStatsPanel">
+            <h4>📊 File Statistics</h4>
+            <div class="stats-grid" id="primaryStatsGrid">
+              <!-- Primary stats will be populated dynamically -->
+            </div>
+          </div>
+
+          <input type="text" class="search-box" id="primarySearchBox" placeholder="🔍 Search chapters..."
+            onkeyup="filterChapters('primary')">
+
+          <div class="chapters-panel">
+            <div class="chapters-header">
+              <h4>📋 SOR Structure Explorer</h4>
+            </div>
+            <div class="chapters-list" id="primaryChaptersList">
+              <!-- Primary chapters will be populated dynamically -->
+            </div>
+          </div>
+
+          <div class="content-viewer">
+            <div class="content-header">
+              <div class="content-title" id="primaryContentTitle">Select a chapter to view content</div>
+              <div class="format-toggle">
+                <button class="format-btn active" onclick="setFormat('pretty', 'primary')">Pretty</button>
+                <button class="format-btn" onclick="setFormat('raw', 'primary')">Raw JSON</button>
+              </div>
+            </div>
+            <div class="content-body" id="primaryContentBody">
+              <div style="text-align: center; color: #666; padding: 40px;">
+                📄 Content will appear here when you select a chapter
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Secondary File Panel (hidden initially) -->
+        <div class="file-panel secondary-panel" id="secondaryPanel" style="display: none;">
+          <div class="panel-header">
+            <h3 id="secondaryFileName">📄 Secondary File</h3>
+          </div>
+
+          <div class="stats-panel" id="secondaryStatsPanel">
+            <h4>📊 File Statistics</h4>
+            <div class="stats-grid" id="secondaryStatsGrid">
+              <!-- Secondary stats will be populated dynamically -->
+            </div>
+          </div>
+
+          <input type="text" class="search-box" id="secondarySearchBox" placeholder="🔍 Search chapters..."
+            onkeyup="filterChapters('secondary')">
+
+          <div class="chapters-panel">
+            <div class="chapters-header">
+              <h4>📋 SOR Structure Explorer</h4>
+            </div>
+            <div class="chapters-list" id="secondaryChaptersList">
+              <!-- Secondary chapters will be populated dynamically -->
+            </div>
+          </div>
+
+          <div class="content-viewer">
+            <div class="content-header">
+              <div class="content-title" id="secondaryContentTitle">Select a chapter to view content</div>
+              <div class="format-toggle">
+                <button class="format-btn active" onclick="setFormat('pretty', 'secondary')">Pretty</button>
+                <button class="format-btn" onclick="setFormat('raw', 'secondary')">Raw JSON</button>
+              </div>
+            </div>
+            <div class="content-body" id="secondaryContentBody">
+              <div style="text-align: center; color: #666; padding: 40px;">
+                📄 Content will appear here when you select a chapter
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="export-buttons">
+        <button class="export-btn" onclick="exportCurrent('primary')">💾 Export Primary Chapter</button>
+        <button class="export-btn" onclick="exportAll('primary')">📦 Export All Primary</button>
+        <button class="export-btn" id="exportSecondaryBtn" onclick="exportCurrent('secondary')"
+          style="display: none;">💾 Export Secondary Chapter</button>
+        <button class="export-btn" id="exportAllSecondaryBtn" onclick="exportAll('secondary')" style="display: none;">📦
+          Export All Secondary</button>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <script>
+    // Global variables
+    var currentFile = null;
+    var currentData = null;
+    var chapters = {};
+    var currentChapter = null;
+    var currentFormat = 'pretty';
+
+    // Dual file support variables
+    var secondaryFile = null;
+    var secondaryData = null;
+    var secondaryChapters = {};
+    let secondaryCurrentChapter = null;
+    let secondaryCurrentFormat = 'pretty';
+
+    // File upload handling
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+
+    // Drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+
+      const files = e.dataTransfer.files;
+      if (files.length > 0 && files[0].name.endsWith('.sor')) {
+        handleFileSelect(files[0]);
+      } else {
+        showError('Please select a valid SOR file');
+      }
+    });
+
+    uploadArea.addEventListener('click', (e) => {
+      // Only trigger file input if not clicking the button directly
+      if (e.target.id !== 'chooseFileBtn') {
+        fileInput.click();
+      }
+    });
+
+    // Handle button click separately
+    const chooseFileBtn = document.getElementById('chooseFileBtn');
+    chooseFileBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent event bubbling to uploadArea
+      fileInput.click();
+    });
+
+    // Secondary file upload handling
+    const secondaryUploadArea = document.getElementById('secondaryUploadArea');
+    const secondFileInput = document.getElementById('secondFileInput');
+    const chooseSecondFileBtn = document.getElementById('chooseSecondFileBtn');
+
+    secondaryUploadArea.addEventListener('click', (e) => {
+      if (e.target.id !== 'chooseSecondFileBtn') {
+        secondFileInput.click();
+      }
+    });
+
+    chooseSecondFileBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      secondFileInput.click();
+    });
+
+    secondaryUploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      secondaryUploadArea.classList.add('dragover');
+    });
+
+    secondaryUploadArea.addEventListener('dragleave', () => {
+      secondaryUploadArea.classList.remove('dragover');
+    });
+
+    secondaryUploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      secondaryUploadArea.classList.remove('dragover');
+
+      const files = e.dataTransfer.files;
+      if (files.length > 0 && files[0].name.endsWith('.sor')) {
+        handleSecondFileSelect(files[0]);
+      } else {
+        showError('Please select a valid SOR file');
+      }
+    });
+
+    async function handleFileSelect(file) {
+      if (!file) return;
+
+      if (!file.name.endsWith('.sor')) {
+        showError('Please select a valid SOR file (.sor extension)');
+        return;
+      }
+
+      showLoading(true);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Include graph plotting option
+      const enableGraphs = document.getElementById('enableGraphs').checked;
+      formData.append('enable_graphs', enableGraphs);
+
+      try {
+        const response = await fetch('/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          currentFile = result;
+          currentFile.filename = file.name; // Store the original filename
+          await loadFileData(result.file_id);
+          showSuccess(`Successfully parsed ${file.name}`);
+        } else {
+          showError(result.message);
+        }
+      } catch (error) {
+        showError(`Upload failed: ${error.message}`);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    async function loadFileData(fileId, isSecondary = false) {
+      try {
+        const response = await fetch(`/file/${fileId}/chapters`);
+        const data = await response.json();
+
+        if (isSecondary) {
+          secondaryChapters = data.chapters;
+          secondaryData = data.raw_data;
+
+          displayStats(data.stats, 'secondary');
+          displayChapters(data.chapter_info, 'secondary');
+
+          // Show secondary panel and update layout
+          document.getElementById('secondaryPanel').style.display = 'block';
+          document.getElementById('exportSecondaryBtn').style.display = 'inline-block';
+          document.getElementById('exportAllSecondaryBtn').style.display = 'inline-block';
+
+          // Enable compare button only if primary file has graphs enabled
+          const compareBtn = document.getElementById('compareSorBtn');
+          const compareButtonContainer = document.getElementById('compareButtonContainer');
+
+
+          if (compareBtn && compareButtonContainer && compareButtonContainer.style.display !== 'none') {
+            compareBtn.disabled = false;
+            compareBtn.style.cursor = 'pointer';
+            compareBtn.style.opacity = '1';
+          } else {
+          }
+
+          // Update secondary file name
+          document.getElementById('secondaryFileName').textContent = `📄 ${secondaryFile.filename || 'Secondary File'}`;
+        } else {
+          chapters = data.chapters;
+          currentData = data.raw_data;
+
+          displayStats(data.stats, 'primary');
+          displayChapters(data.chapter_info, 'primary');
+
+          // Show content section and secondary upload option
+          document.getElementById('contentSection').style.display = 'block';
+          document.getElementById('secondaryUploadSection').style.display = 'block';
+
+          // Show compare button only if graphs are enabled for the primary file
+          const compareButtonContainer = document.getElementById('compareButtonContainer');
+          if (data.stats && data.stats.graphs_enabled) {
+            compareButtonContainer.style.display = 'block';
+          } else {
+            compareButtonContainer.style.display = 'none';
+          }
+
+          // Update primary file name
+          document.getElementById('primaryFileName').textContent = `📄 ${currentFile.filename || 'Primary File'}`;
+        }
+
+      } catch (error) {
+        showError(`Failed to load file data: ${error.message}`);
+      }
+    }
+
+    async function handleSecondFileSelect(file) {
+      if (!file) return;
+
+      if (!file.name.endsWith('.sor')) {
+        showError('Please select a valid SOR file (.sor extension)');
+        return;
+      }
+
+      if (!currentFile) {
+        showError('Please upload a primary file first');
+        return;
+      }
+
+      // Check if primary file has graphs enabled
+      const compareContainer = document.getElementById('compareButtonContainer');
+      if (!compareContainer || compareContainer.style.display === 'none') {
+        showError('Primary file must have graphs enabled for comparison');
+        return;
+      }
+
+      showLoading(true);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Include graph plotting option
+      const enableGraphs = document.getElementById('enableGraphs').checked;
+      formData.append('enable_graphs', enableGraphs);
+
+      try {
+        const response = await fetch(`/upload-secondary/${currentFile.file_id}`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          secondaryFile = result;
+          secondaryFile.filename = file.name; // Store the original filename
+          await loadFileData(result.file_id, true);
+          showSuccess(`Successfully parsed secondary file ${file.name}`);
+
+          // Hide secondary upload section
+          document.getElementById('secondaryUploadSection').style.display = 'none';
+        } else {
+          showError(result.message);
+        }
+      } catch (error) {
+        showError(`Secondary upload failed: ${error.message}`);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function displayStats(stats, panel = 'primary') {
+      const statsGrid = document.getElementById(panel === 'secondary' ? 'secondaryStatsGrid' : 'primaryStatsGrid');
+      const fileId = panel === 'secondary' ? (secondaryFile ? secondaryFile.file_id : null) : (currentFile ? currentFile.file_id : null);
+
+      statsGrid.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value">${stats.total_chapters}</div>
+                    <div class="stat-label">Chapters</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.total_items}</div>
+                    <div class="stat-label">Total Items</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.file_size}</div>
+                    <div class="stat-label">File Size (KB)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.blocks_count}</div>
+                    <div class="stat-label">Blocks</div>
+                </div>
+                <div class="stat-item ${stats.graphs_enabled ? 'clickable-stat' : ''}" ${stats.graphs_enabled && fileId ? `onclick="openGraphPage('${fileId}')" title="Click to view interactive graph"` : ''}>
+                    <div class="stat-value">${stats.graphs_enabled ? '📈' : '📊'}</div>
+                    <div class="stat-label">${stats.graphs_enabled ? 'Graphs Enabled (Click to View)' : 'Data Only'}</div>
+                </div>
+            `;
+    }
+
+    function displayChapters(chapterInfo, panel = 'primary') {
+      const chaptersList = document.getElementById(panel === 'secondary' ? 'secondaryChaptersList' : 'primaryChaptersList');
+      chaptersList.innerHTML = '';
+
+      chapterInfo.forEach((chapter, index) => {
+        const chapterElement = document.createElement('div');
+        chapterElement.className = 'chapter-item';
+        chapterElement.onclick = () => selectChapter(chapter.name, chapterElement, panel);
+
+        chapterElement.innerHTML = `
+                    <div class="chapter-icon">${chapter.icon}</div>
+                    <div class="chapter-info">
+                        <div class="chapter-name">${chapter.name}</div>
+                        <div class="chapter-details">${chapter.data_type}</div>
+                    </div>
+                    <div class="chapter-count">${chapter.item_count}</div>
+                `;
+
+        chaptersList.appendChild(chapterElement);
+      });
+    }
+
+    function selectChapter(chapterName, element, panel = 'primary') {
+      // Remove active class from chapters in the same panel
+      const panelChapters = document.querySelectorAll(`#${panel}ChaptersList .chapter-item`);
+      panelChapters.forEach(item => {
+        item.classList.remove('active');
+      });
+
+      // Add active class to selected chapter
+      element.classList.add('active');
+
+      if (panel === 'secondary') {
+        secondaryCurrentChapter = chapterName;
+      } else {
+        currentChapter = chapterName;
+      }
+
+      displayChapterContent(chapterName, panel);
+    }
+
+    function displayChapterContent(chapterName, panel = 'primary') {
+      const contentTitle = document.getElementById(panel === 'secondary' ? 'secondaryContentTitle' : 'primaryContentTitle');
+      const contentBody = document.getElementById(panel === 'secondary' ? 'secondaryContentBody' : 'primaryContentBody');
+
+      contentTitle.textContent = `📄 ${chapterName}`;
+
+      const data = panel === 'secondary' ? secondaryChapters[chapterName] : chapters[chapterName];
+      const format = panel === 'secondary' ? secondaryCurrentFormat : currentFormat;
+
+      if (!data) {
+        contentBody.innerHTML = '<div style="text-align: center; color: #666;">No data available for this chapter</div>';
+        return;
+      }
+
+      if (format === 'pretty') {
+        contentBody.innerHTML = formatPretty(data);
+      } else {
+        contentBody.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+      }
+    }
+
+    function formatPretty(data) {
+      if (typeof data !== 'object') {
+        return `<div>${data}</div>`;
+      }
+
+      let html = '';
+
+      if (Array.isArray(data)) {
+        data.forEach((item, index) => {
+          html += `<div style="margin-bottom: 20px;">
+                        <strong>📋 Item ${index + 1}:</strong>
+                        <div style="margin-left: 20px; margin-top: 10px;">
+                            ${typeof item === 'object' ? `<pre>${JSON.stringify(item, null, 2)}</pre>` : item}
+                        </div>
+                    </div>`;
+        });
+      } else {
+        Object.entries(data).forEach(([key, value]) => {
+          html += `<div style="margin-bottom: 15px;">
+                        <strong>🔹 ${key}:</strong>
+                        <div style="margin-left: 20px; margin-top: 5px;">
+                            ${typeof value === 'object' ? `<pre>${JSON.stringify(value, null, 2)}</pre>` : value}
+                        </div>
+                    </div>`;
+        });
+      }
+
+      return html || '<div>No data to display</div>';
+    }
+
+    function setFormat(format, panel = 'primary') {
+      if (panel === 'secondary') {
+        secondaryCurrentFormat = format;
+      } else {
+        currentFormat = format;
+      }
+
+      // Update button states for the specific panel
+      const panelButtons = document.querySelectorAll(`#${panel}Panel .format-btn`);
+      panelButtons.forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+
+      // Refresh content if chapter is selected
+      const selectedChapter = panel === 'secondary' ? secondaryCurrentChapter : currentChapter;
+      if (selectedChapter) {
+        displayChapterContent(selectedChapter, panel);
+      }
+    }
+
+    function filterChapters(panel = 'primary') {
+      const searchBox = document.getElementById(panel === 'secondary' ? 'secondarySearchBox' : 'primarySearchBox');
+      const searchTerm = searchBox.value.toLowerCase();
+      const chapterItems = document.querySelectorAll(`#${panel}ChaptersList .chapter-item`);
+
+      chapterItems.forEach(item => {
+        const chapterName = item.querySelector('.chapter-name').textContent.toLowerCase();
+        if (chapterName.includes(searchTerm)) {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+
+    async function exportCurrent(panel = 'primary') {
+      const file = panel === 'secondary' ? secondaryFile : currentFile;
+      const chapter = panel === 'secondary' ? secondaryCurrentChapter : currentChapter;
+
+      if (!chapter) {
+        showError(`Please select a chapter to export from ${panel} file`);
+        return;
+      }
+
+      if (!file) {
+        showError(`No ${panel} file loaded`);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/file/${file.file_id}/export/${encodeURIComponent(chapter)}`);
+        const blob = await response.blob();
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${panel}_${chapter.replace(/[^a-zA-Z0-9]/g, '_')}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showSuccess(`Exported ${panel} ${chapter} successfully`);
+      } catch (error) {
+        showError(`Export failed: ${error.message}`);
+      }
+    }
+
+    async function exportAll(panel = 'primary') {
+      const file = panel === 'secondary' ? secondaryFile : currentFile;
+
+      if (!file) {
+        showError(`No ${panel} file loaded`);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/file/${file.file_id}/export-all`);
+        const blob = await response.blob();
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${file.file_id}_all_chapters.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showSuccess('Exported all chapters successfully');
+      } catch (error) {
+        showError(`Export failed: ${error.message}`);
+      }
+    }
+
+    function showLoading(show) {
+      document.getElementById('uploadArea').style.display = show ? 'none' : 'block';
+      document.getElementById('loadingArea').style.display = show ? 'block' : 'none';
+    }
+
+    function showError(message) {
+      removeMessages();
+      const uploadSection = document.getElementById('uploadSection');
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'error-message';
+      errorDiv.textContent = `❌ ${message}`;
+      uploadSection.insertBefore(errorDiv, uploadSection.firstChild);
+    }
+
+    function showSuccess(message) {
+      removeMessages();
+      const uploadSection = document.getElementById('uploadSection');
+      const successDiv = document.createElement('div');
+      successDiv.className = 'success-message';
+      successDiv.textContent = `✅ ${message}`;
+      uploadSection.insertBefore(successDiv, uploadSection.firstChild);
+    }
+
+    function removeMessages() {
+      const messages = document.querySelectorAll('.error-message, .success-message');
+      messages.forEach(msg => msg.remove());
+    }
+
+    async function openGraphPage(fileId) {
+      if (fileId) {
+        try {
+          // Fetch graph HTML content
+          const response = await fetch(`/graph/${fileId}`);
+          const graphHtml = await response.text();
+
+          // Hide main content sections
+          document.getElementById('uploadSection').style.display = 'none';
+          document.getElementById('contentSection').style.display = 'none';
+
+          // Create or update graph container
+          let graphContainer = document.getElementById('graphContainer');
+          if (!graphContainer) {
+            graphContainer = document.createElement('div');
+            graphContainer.id = 'graphContainer';
+            graphContainer.style.cssText = `
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            bottom: 0;
+                            z-index: 1000;
+                            background: white;
+                            overflow: auto;
+                        `;
+            document.body.appendChild(graphContainer);
+          }
+
+          // Create iframe to contain the graph HTML properly
+          const iframe = document.createElement('iframe');
+          iframe.style.cssText = `
+                        width: 100%;
+                        height: 100vh;
+                        border: none;
+                        margin: 0;
+                        padding: 0;
+                    `;
+
+          graphContainer.innerHTML = '';
+          graphContainer.appendChild(iframe);
+
+          // Write the graph HTML to iframe
+          iframe.contentWindow.document.open();
+          iframe.contentWindow.document.write(graphHtml);
+          iframe.contentWindow.document.close();
+
+          // Make backToSorParser available to iframe
+          iframe.contentWindow.parent.backToSorParser = backToSorParser;
+
+          graphContainer.style.display = 'block';
+
+        } catch (error) {
+          showError(`Failed to load graph: ${error.message}`);
+        }
+      } else {
+        showError('No file ID provided for graph display');
+      }
+    }
+
+    function backToSorParser() {
+      // Hide graph container
+      const graphContainer = document.getElementById('graphContainer');
+      if (graphContainer) {
+        graphContainer.style.display = 'none';
+      }
+
+      // Hide comparison container
+      const compareContainer = document.getElementById('compareContainer');
+      if (compareContainer) {
+        compareContainer.style.display = 'none';
+      }
+
+      // Show main content
+      document.getElementById('uploadSection').style.display = 'block';
+      if (currentFile) {
+        document.getElementById('contentSection').style.display = 'block';
+      }
+    }
+
+    function compareSorFiles() {
+
+      // Add alert for immediate feedback
+
+      if (!currentFile || !secondaryFile) {
+        showError('Both primary and secondary files must be loaded for comparison');
+        return;
+      }
+
+      openCompareGraphPage(currentFile.file_id, secondaryFile.file_id);
+    }
+
+    async function openCompareGraphPage(primaryFileId, secondaryFileId) {
+      if (!primaryFileId || !secondaryFileId) {
+        showError('Both file IDs are required for comparison');
+        return;
+      }
+
+      try {
+        // Fetch comparison graph HTML content
+        const response = await fetch(`/compare-graph/${primaryFileId}/${secondaryFileId}`);
+        const compareHtml = await response.text();
+
+        // Hide main content sections
+        document.getElementById('uploadSection').style.display = 'none';
+        document.getElementById('contentSection').style.display = 'none';
+
+        // Create or update comparison container
+        let compareContainer = document.getElementById('compareContainer');
+        if (!compareContainer) {
+          compareContainer = document.createElement('div');
+          compareContainer.id = 'compareContainer';
+          compareContainer.style.cssText = `
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        z-index: 1000;
+                        background: white;
+                        overflow: auto;
+                    `;
+          document.body.appendChild(compareContainer);
+        }
+
+        // Create iframe to contain the comparison HTML properly
+        const iframe = document.createElement('iframe');
+        iframe.style.cssText = `
+                      width: 100%;
+                      height: 100vh;
+                      border: none;
+                      margin: 0;
+                      padding: 0;
+                  `;
+
+        compareContainer.innerHTML = '';
+        compareContainer.appendChild(iframe);
+
+        // Write the comparison HTML to iframe
+        iframe.contentWindow.document.open();
+        iframe.contentWindow.document.write(compareHtml);
+        iframe.contentWindow.document.close();
+
+        // Make backToSorParser available to iframe
+        iframe.contentWindow.parent.backToSorParser = backToSorParser;
+
+      } catch (error) {
+        console.error('Error opening comparison graph:', error);
+        showError(`Failed to load comparison graph: ${error.message}`);
+      }
+    }
+  </script>
+</body>
+
+</html>

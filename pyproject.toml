@@ -1,0 +1,30 @@
+[project]
+name = "sor-viewer"
+version = "2.0.1"
+description = "Cisco Optical SOR viewer"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "ciscotdrpy==3.1.5",
+    # These libraries are needed to develop OTDR tools
+    "fastapi>=0.104.1",
+    "uvicorn[standard]>=0.24.0",
+    "python-multipart>=0.0.6",
+    "pydantic>=2.5.0",
+    "jinja2>=3.1.6"
+]
+
+[project.optional-dependencies]
+
+[tool.uv.sources]
+sapy = { index = "sapy" }
+
+[[tool.uv.index]]
+name = "sapy"
+url = "http://engci-maven-master.cisco.com/artifactory/api/pypi/python-agent-pypi/simple"
+
+[[tool.uv.index]]
+name = "ciscotdrpy"
+url = "http://engci-maven-master.cisco.com/artifactory/api/pypi/mig-optical-pypi/simple"
+
+[dependency-groups]
